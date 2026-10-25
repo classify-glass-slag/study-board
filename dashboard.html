@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>StudyBoard 学习看板</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2130; --line:#2a3446;
+    --text:#e8eefc; --dim:#8fa0bf; --ok:#3ddc97; --accent:#5b8cff; --warn:#ffc86b; --pink:#ff7fb0;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:26px 30px;
+    background:radial-gradient(1200px 600px at 15% -10%, #1b2740, #0f1420);
+    color:var(--text); font:15px/1.6 "Microsoft YaHei", system-ui, sans-serif;
+    min-height:100vh;
+  }
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h2{font-size:14px;margin:0 0 12px;color:var(--accent);letter-spacing:.6px;font-weight:600}
+  .big{font-size:24px;font-weight:700}
+  .day,.step{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:8px;
+    border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:.15s;
+  }
+  .day:hover,.step:hover{border-color:var(--accent);transform:translateX(2px)}
+  .day .name{font-weight:600;color:var(--dim);min-width:44px}
+  .day .task,.step .task{flex:1;font-size:14px}
+  .day.done,.step.done{border-color:var(--ok);background:rgba(61,220,151,.08)}
+  .day.done .task,.step.done .task{color:var(--ok);text-decoration:line-through;opacity:.85}
+  .day.today{box-shadow:0 0 0 1px var(--accent) inset, 0 0 12px rgba(91,140,255,.25)}
+  .now{font-size:11px;color:var(--accent);border:1px solid rgba(91,140,255,.5);border-radius:999px;padding:1px 7px}
+  .tag{
+    font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);
+    color:var(--dim);white-space:nowrap;
+  }
+  .tag.课{color:var(--accent);border-color:rgba(91,140,255,.5)}
+  .tag.题{color:var(--ok);border-color:rgba(61,220,151,.5)}
+  .tag.复盘{color:var(--warn);border-color:rgba(255,200,107,.5)}
+  .tag.待启动{color:var(--pink);border-color:rgba(255,127,176,.5)}
+  .tag.进行中{color:var(--ok);border-color:rgba(61,220,151,.5)}
+  .bar{height:10px;background:#131a27;border-radius:6px;overflow:hidden;margin:12px 0 8px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3ddc97,#5b8cff);transition:width .4s}
+  ul{margin:6px 0 0;padding-left:18px;color:var(--dim);font-size:13.5px}
+  li{margin-bottom:6px}
+  .logitem{border-left:3px solid var(--accent);padding:3px 0 3px 10px;margin-bottom:9px;font-size:13.5px;color:var(--dim)}
+  .logitem b{color:var(--text)}
+  .hint{color:var(--dim);font-size:12.5px;margin-top:6px}
+  .wide{grid-column:1 / -1}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  button{
+    background:transparent;color:var(--accent);border:1px solid rgba(91,140,255,.6);
+    border-radius:9px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  button:hover{background:rgba(91,140,255,.12)}
+  .hist{font-size:13px;color:var(--dim);border-bottom:1px dashed var(--line);padding:5px 0}
+  .hist b{color:var(--text)}
+</style>
+</head>
+<body>
+  <h1>🐟 学习看板</h1>
+  <div class="sub" id="sub">加载中…</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">本周主题</h2>
+	<button onclick="exportBoard()">🖊导出留档</button>
+        <button onclick="newWeek()">🗓 新的一周</button>
+      </div>
+      <div class="sub" id="weekInfo" style="margin:8px 0 6px"></div>
+      <div class="big" id="theme">-</div>
+      <div class="sub" id="goal" style="margin-top:8px"></div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="sub" id="prog"></div>
+      <div class="hint">进度 = 打勾的「做题日」数量（周日复盘不计入）</div>
+      <div id="histBox" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>本周打卡（点一下切换）</h2>
+      <div id="days"></div>
+    </div>
+
+    <div class="card wide">
+      <h2>本月小挑战</h2>
+      <div class="row">
+        <span class="big" id="chTitle" style="font-size:18px">-</span>
+        <span class="tag" id="chStatus"></span>
+        <span class="sub" id="chPeriod"></span>
+      </div>
+      <div class="sub" id="chDesc" style="margin-top:8px"></div>
+      <div class="bar"><i id="chBar"></i></div>
+      <div class="sub" id="chProg"></div>
+      <div id="chSteps" style="margin-top:12px"></div>
+      <div class="hint">候选点子</div>
+      <ul id="chIdeas"></ul>
+    </div>
+
+    <div class="card">
+      <h2>临时任务（一次性）</h2>
+      <div id="todos"></div>
+    </div>
+
+    <div class="card">
+      <h2>保命规则</h2>
+      <ul id="rules"></ul>
+    </div>
+
+    <div class="card">
+      <h2>最近记录</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+
+<script>
+// 周报导出：一键导出本周周任务完成情况（函数调用）
+function buildMarkdown(p) {
+   let md = `# 学习看板 · 第 ${p.weekNo || 1} 周\n\n`;
+  const countable = (p.days || []).filter(d => d.countable);
+  const done = countable.filter(d => d.done).length;
+  const target = (p.stats && p.stats.targetProblems) || countable.length || 0;
+  const pct = target ? Math.round((done / target) * 100) : 0;
+  const streak = calcStreak(p.checkDates);
+  const ch = p.monthlyChallenge || {};
+  const esc = (s) => String(s || '').replace(/\|/g, '\\|');
+
+  md += `- 起始：${p.weekStart || '?'}\n- 主题：${p.weekTheme || '?'}\n- 目标：${p.weekGoal || '?'}\n`;
+  md += `- 进度：${done} / ${target} 个做题日（${pct}%）\n- 连续打卡：${streak} 天\n\n`;
+
+  md += '## 本周任务\n\n| 日 | 类型 | 任务 | 状态 |\n|---|---|---|---|\n';
+  (p.days || []).forEach((d) => {
+    md += `| ${esc(d.day)} | ${esc(d.kind)} | ${esc(d.task)} | ${d.done ? '✅' : '⬜'} |\n`;
+  });
+  md += '\n';
+
+  const todos = p.todos || [];
+  if (todos.length) {
+    md += '## 临时任务\n\n';
+    todos.forEach((t) => { md += `- [${t.done ? 'x' : ' '}] ${esc(t.name)}\n`; });
+    md += '\n';
+  }
+
+  md += `## 月度项目：${ch.title || '未设置'}（${ch.status || ''}）\n\n`;
+  if (ch.period) md += `- 周期：${ch.period}\n`;
+  (ch.steps || []).forEach((s) => { md += `- [${s.done ? 'x' : ' '}] ${esc(s.name)}\n`; });
+  md += '\n';
+
+  const logs = p.log || [];
+  if (logs.length) {
+    md += '## 最近记录\n\n';
+    logs.slice(0, 5).forEach((l) => { md += `- ${l.date} ${l.note}\n`; });
+    md += '\n';
+  }
+
+  md += `> 导出时间：${new Date().toLocaleString('zh-CN')}\n`;
+   
+
+
+   return md;
+}
+
+async function exportBoard() {
+  try {
+    const p = await (await fetch('/plan?t=' + Date.now())).json();
+    const md = buildMarkdown(p);
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `学习看板-第${p.weekNo || 1}周-${new Date().toLocaleDateString('sv-SE')}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (e) {
+    alert('导出失败：' + e.message);
+  }
+}
+
+// 连续打卡天数：从今天（或昨天）往回数，遇到没有打卡记录的日期就停
+function calcStreak(dates) {
+  const set = new Set(dates || []);
+  const fmt = (d) => d.toLocaleDateString('sv-SE');
+  const d = new Date();
+  if (!set.has(fmt(d))) d.setDate(d.getDate() - 1);   // 今天还没打卡，就从昨天开始数
+  let n = 0;
+  while (set.has(fmt(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+async function load() {
+  try {
+    const p = await (await fetch('/plan?t=' + Date.now())).json();
+
+    const countable = p.days.filter(d => d.countable);
+    const done = countable.filter(d => d.done).length;
+    const target = p.stats.targetProblems || countable.length;
+    const streak = calcStreak(p.checkDates);     // 连续打卡天数（先算好，下面要用）
+
+    document.getElementById('sub').textContent = '最后更新：' + p.updatedAt;
+    document.getElementById('weekInfo').textContent =
+      `第 ${p.weekNo || 1} 周　·　自 ${p.weekStart || '?'} 起`;
+    document.getElementById('theme').textContent = p.weekTheme;
+    document.getElementById('goal').textContent = p.weekGoal;
+    document.getElementById('prog').textContent =
+      `已完成 ${done} / ${target} 个做题日　·　连续打卡 ${streak} 天`;
+    document.getElementById('bar').style.width =
+      Math.min(100, (done / Math.max(1, target)) * 100) + '%';
+
+    // 今天高亮（周一=0 ... 周日=6）
+    const todayIdx = (new Date().getDay() + 6) % 7;
+    document.getElementById('days').innerHTML = p.days.map((d, i) => `
+      <div class="day ${d.done ? 'done' : ''} ${i === todayIdx ? 'today' : ''}" onclick="toggleDay(${i})">
+        <span class="name">${d.day}</span>
+        <span class="tag ${d.kind || ''}">${d.kind || ''}</span>
+        <span class="task">${d.task}</span>
+        ${i === todayIdx ? '<span class="now">今天</span>' : ''}
+        <span>${d.done ? '✅' : '⬜'}</span>
+      </div>`).join('');
+
+    // 往周存档
+    const hist = p.history || [];
+    document.getElementById('histBox').innerHTML = hist.length
+      ? '<div class="hint" style="margin-bottom:4px">往周存档</div>' + hist.slice(0, 5).map(h =>
+          `<div class="hist">第 <b>${h.weekNo}</b> 周（${h.weekStart} 起）：<b>${h.done}/${h.target}</b>　${h.theme}</div>`
+        ).join('')
+      : '';
+
+    // 月度挑战
+    const ch = p.monthlyChallenge;
+    if (ch) {
+      const steps = ch.steps || [];
+      const sdone = steps.filter(s => s.done).length;
+      document.getElementById('chTitle').textContent = ch.title;
+      document.getElementById('chStatus').textContent = ch.status || '';
+      document.getElementById('chStatus').className = 'tag ' + (ch.status || '');
+      document.getElementById('chPeriod').textContent = ch.period || '';
+      document.getElementById('chDesc').textContent = ch.desc || '';
+      document.getElementById('chProg').textContent = `进度 ${sdone} / ${steps.length} 步`;
+      document.getElementById('chBar').style.width =
+        Math.min(100, (sdone / Math.max(1, steps.length)) * 100) + '%';
+      document.getElementById('chSteps').innerHTML = steps.map((s, i) => `
+        <div class="step ${s.done ? 'done' : ''}" onclick="toggleStep(${i})">
+          <span>${s.done ? '✅' : '⬜'}</span>
+          <span class="task">${s.name}</span>
+        </div>`).join('');
+      document.getElementById('chIdeas').innerHTML = (ch.ideas || []).map(x => `<li>${x}</li>`).join('');
+    }
+
+    const todos = p.todos || [];
+    document.getElementById('todos').innerHTML = todos.length
+      ? todos.map((t, i) => `
+        <div class="step ${t.done ? 'done' : ''}" onclick="toggleTodo(${i})">
+          <span>${t.done ? '✅' : '⬜'}</span>
+          <span class="task">${t.name}</span>
+        </div>`).join('')
+      : '<div class="sub">暂无临时任务</div>';
+
+    document.getElementById('rules').innerHTML = p.rules.map(r => `<li>${r}</li>`).join('');
+    document.getElementById('log').innerHTML =
+      (p.log || []).map(l => `<div class="logitem"><b>${l.date}</b> ${l.note}</div>`).join('')
+      || '<div class="sub">暂无记录</div>';
+  } catch (e) {
+    document.getElementById('sub').textContent = '读取失败：' + e.message;
+  }
+}
+
+async function post(url, payload) {
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload ? JSON.stringify(payload) : '{}'
+  });
+  load();
+}
+const toggleDay  = (i) => post('/toggle', { kind: 'day', index: i });
+const toggleStep = (i) => post('/toggle', { kind: 'step', index: i });
+const toggleTodo = (i) => post('/toggle', { kind: 'todo', index: i });
+function newWeek() {
+  if (confirm('开始新的一周？\n会把本周成绩存入「往周存档」，并清空所有打卡。')) post('/newweek');
+}
+
+load();
+setInterval(load, 3000);   // 每 3 秒自动刷新
+</script>
+</body>
+</html>

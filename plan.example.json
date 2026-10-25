@@ -1,0 +1,49 @@
+{
+  "weekNo": 1,
+  "weekStart": "2026-01-05",
+  "weekTheme": "示例：搜索（DFS / BFS）",
+  "weekGoal": "本周目标：完成 6 个做题日",
+  "stats": {
+    "targetProblems": 6
+  },
+  "monthlyChallenge": {
+    "title": "月度小项目（示例）",
+    "period": "本月",
+    "status": "进行中",
+    "desc": "把想要的小工具拆成 3~5 个最小步骤，每周推进一步；先能跑，再好看。",
+    "ideas": [
+      "命令行小工具：待办清单 / 文件批量重命名",
+      "网页小工具：学习看板 / 成绩记录",
+      "自动化脚本：备份 / 周报生成"
+    ],
+    "steps": [
+      { "name": "步骤1 定题：做什么、给谁用", "done": true },
+      { "name": "步骤2 拆分成 3~5 个最小步骤", "done": false },
+      { "name": "步骤3 跑通最小版本：能运行就赢", "done": false },
+      { "name": "步骤4 加一个亮点（交互 / 自动化 / 导出）", "done": false },
+      { "name": "步骤5 收尾：README + 发布", "done": false }
+    ]
+  },
+  "days": [
+    { "day": "周一", "task": "项目：推进当前最小步骤", "kind": "项目", "countable": true, "done": false },
+    { "day": "周二", "task": "课程：1 课 + 记笔记", "kind": "课", "countable": true, "done": false },
+    { "day": "周三", "task": "项目：推进当前最小步骤", "kind": "项目", "countable": true, "done": false },
+    { "day": "周四", "task": "刷题：1 题", "kind": "题", "countable": true, "done": false },
+    { "day": "周五", "task": "项目：推进当前最小步骤", "kind": "项目", "countable": true, "done": false },
+    { "day": "周六", "task": "自由练习 / 小工具", "kind": "题", "countable": true, "done": false },
+    { "day": "周日", "task": "复盘 30min + 下周计划", "kind": "复盘", "countable": false, "done": false }
+  ],
+  "todos": [
+    { "name": "示例临时任务：点一下就能打钩", "done": false }
+  ],
+  "rules": [
+    "最低承诺：每天 30 分钟，下限不断线",
+    "先保正课不挂科，编程时间不侵占正课",
+    "23:30 收工，不熬夜刷题",
+    "每周末复盘写 3 行：类型 / 卡点 / 教训"
+  ],
+  "log": [
+    { "date": "01-05", "note": "示例：第 1 周开始" }
+  ],
+  "checkDates": []
+}
