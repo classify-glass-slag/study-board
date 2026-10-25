@@ -31,8 +31,25 @@ function readPlan() {
   }
   return JSON.parse(fs.readFileSync(PLAN, 'utf8'));
 }
+// 写入前给 plan.json 留一份"当天快照"（每天第一笔写入时保存，最多留 14 份）
+function backupPlan() {
+  try {
+    if (!fs.existsSync(PLAN)) return;
+    const dir = path.join(ROOT, 'backups');
+    fs.mkdirSync(dir, { recursive: true });
+    const day = new Date().toLocaleDateString('sv-SE');   // YYYY-MM-DD
+    const file = path.join(dir, `plan-${day}.json`);
+    if (!fs.existsSync(file)) fs.copyFileSync(PLAN, file); // 当天第一次：保存"改动前"的样子
+    const all = fs.readdirSync(dir).filter((n) => /^plan-\d{4}-\d{2}-\d{2}\.json$/.test(n)).sort();
+    all.slice(0, Math.max(0, all.length - 14)).forEach((n) => fs.unlinkSync(path.join(dir, n)));
+  } catch (e) {
+    console.error('备份失败（不影响主流程）:', e.message);
+  }
+}
+
 function writePlan(plan) {
   plan.updatedAt = new Date().toLocaleString('zh-CN');
+  backupPlan();
   fs.writeFileSync(PLAN, JSON.stringify(plan, null, 2), 'utf8');
 }
 function ok(res) {

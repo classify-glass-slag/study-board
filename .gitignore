@@ -7,6 +7,7 @@ node_modules/
 
 # 真实学习数据（首次运行会从 plan.example.json 自动生成）
 plan.json
+backups/
 
 # 备份与临时文件
 *.bak
